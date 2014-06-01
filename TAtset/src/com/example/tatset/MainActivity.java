@@ -12,7 +12,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
@@ -22,14 +21,13 @@ static private String mch1 = "<dt>";
 static private String mch2 ="<a href=";
 static private String mch22 ="</a>";
 static private String mch3="<dd>";
-static private String mch4="<br />";
+static private String mch33="</dd>";
 static private String[] mArticleTitle = new String[100];
 static private String[] mArticleLocation = new String[100];
 static private String[] mArticleDay = new String[100];
 static private String[] mArticleDetail = new String[100];
 static private String[] mArticleWeb = new String[100];
-
-
+static private String tmp_data = "";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -40,7 +38,7 @@ static private String[] mArticleWeb = new String[100];
 
         mView=(TextView)findViewById(R.id.view);
 
-        //Log.v("tag1",httpGet("http://www.2083.jp/concert/#next"));
+
         mView.setText(new String(httpGet("http://www.2083.jp/concert/#next")));
     }
 
@@ -56,14 +54,15 @@ static private String[] mArticleWeb = new String[100];
         int count = 0;
         String flag_s="<li><dl class=\"detail\">";
         String flag_e="</dl></li>";
-        String flag_b="<dt></dt>";
+        String flag_dt="<dt></dt>";
+        String flag_last = "<dd>コンサート情報掲載の依頼は";
         int flag = 0;
 
         while((tmp=input.readLine()) !=null){
-        	if (tmp.indexOf(flag_b) != -1){
+        	if (tmp.indexOf(flag_dt) != -1 || tmp.indexOf(flag_last) != -1){
         	} else {
         		if(flag==1){
-        			dataParser(tmp,count);
+        			dataParser(brChecker(tmp),count);
         			data+=tmp;
         		}
         	}
@@ -76,22 +75,40 @@ static private String[] mArticleWeb = new String[100];
         		flag=0;
         	}
         }
-
-       //(7)終了処理
          stream.close();
          input.close();
-         return data;         //dataを返却
+         return data;
 
      }catch (Exception  e){
          return e.toString();
      }
    }
 
+    public static String brChecker(String data){
+    	String freecheck= "<span class=\"free\">";
+    	//titleの改行チェック
+        if(data.indexOf(mch2) != -1){
+     	}else if(data.indexOf(mch22) != -1){
+        	tmp_data+=data;
+        	return tmp_data;
+     	}
+      //detailの改行チェック
+        if(data.indexOf(mch3) != -1){
+     	}else if(data.indexOf(mch33) != -1){
+     		if(data.indexOf(freecheck) != -1){
+     			tmp_data+="</dd>";
+     			return tmp_data;
+     		}else{
+     			tmp_data+=data;
+     			return tmp_data;
+     		}
+     	}
+    	tmp_data = data;
+    	return data;
+    }
+
     public static void dataParser(String data ,int cnt){
     	int ct = cnt - 1;
-    	int br_c = 0;
-
-        String br_tmp="";
     	if (data.indexOf(mch1) != -1){
 
         	//dayのデータ整形
@@ -101,13 +118,6 @@ static private String[] mArticleWeb = new String[100];
     		//locationのデータ整形
     		String[] sploca = spday[1].split("・");
     		mArticleLocation[ct] = sploca[0];
-
-    	}
-
-    	if(br_c == 1){
-    		data+=br_tmp;
-    		Log.v("tag7", 	data);
-    		br_c = 0;
     	}
 
     	if (data.indexOf(mch22) != -1 && data.indexOf(mch2) != -1){
@@ -121,19 +131,16 @@ static private String[] mArticleWeb = new String[100];
     		spweb[2] = spweb[2].replaceAll("</a></dt>"," ");
     		spweb[2] = spweb[2].replaceAll(">"," ");
     		mArticleTitle[ct] = spweb[2];
-    		Log.v("tag4", 	mArticleTitle[ct]);
-    		br_tmp = null;
     	}
 
-    	if(data.indexOf(mch2) != -1){
-    	}else if(data.indexOf(mch2) != -1){
-    	}else{
-    		br_tmp =data;
-    		br_c =1;
-    	}
-
-    	if (data.indexOf(mch3) != -1){
-    		Log.v("tag7", 	data);
+    	if (data.indexOf(mch3) != -1 && data.indexOf(mch33) != -1){
+    		String detail = data;
+    		detail = detail.replaceAll("<br />"," ");
+    		detail = detail.replaceAll("</dd>","");
+    		detail = detail.replaceAll("<dd>","");
+    		detail = detail.replaceAll("</span>","");
+    		detail = detail.trim();
+    		mArticleDetail[ct] = detail;
     	}
     }
 
@@ -174,11 +181,4 @@ static private String[] mArticleWeb = new String[100];
     	}
     }
 }
-
-
-
-
-
-
-
 
